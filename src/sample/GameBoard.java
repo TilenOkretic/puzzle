@@ -6,37 +6,54 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
-import java.awt.*;
-import java.io.File;
-import java.io.Serializable;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class GameBoard extends VBox implements Serializable {
 
-    private Stage primary_satge;
-    int x_size, y_size;
+    private final Stage primary_satge;
+    int size;
     String game_name;
     GridPane tile_board;
 
     int[][] matrix;
 
-    public GameBoard(Stage primary_stage, int x_size, int y_size) {
+    public GameBoard(Stage primary_stage, int size) {
         this.primary_satge = primary_stage;
-        this.x_size = x_size;
-        this.y_size = y_size;
+        this.size = size;
         this.tile_board = new GridPane();
-        this.matrix = new int[x_size][y_size];
+        this.matrix = new int[size][size];
 
         this.create_tiles();
 
         File file = new File("./saveFiles/");
-        game_name = "MyGame-" + (file.list() != null ? "" + file.list().length : "" + 0);
+        game_name = "MyGame-" + (file.list() != null ? "" + Objects.requireNonNull(file.list()).length : "" + 0);
+
+        tile_board.setPadding(new Insets(20));
+        makeLabels();
+
+        extra_buttons();
+
+    }
+
+    public GameBoard(Stage primary_stage, int size, int[][] matrix, int[][] stile) {
+        this.primary_satge = primary_stage;
+        this.size = size;
+        this.tile_board = new GridPane();
+        this.matrix = matrix;
+
+        load_tiles(stile);
+
+        File file = new File("./saveFiles/");
+        game_name = "MyGame-" + (file.list() != null ? "" + Objects.requireNonNull(file.list()).length : "" + 0);
 
         tile_board.setPadding(new Insets(20));
         makeLabels();
@@ -65,9 +82,71 @@ public class GameBoard extends VBox implements Serializable {
         vertical.setText(vertical.getText() + sb.toString());
     }
 
+    public void load_tiles(int[][] stile) {
+        for (int i = 0; i < stile.length; i++) {
+            for (int j = 0; j < stile[i].length; j++) {
+
+                Rectangle tile = new Rectangle(80, 80);
+                TextField field = new OneCharField();
+
+                if (stile[i][j] == 0) {
+                    tile.setFill(Color.WHITE);
+                    field.setAlignment(Pos.CENTER);
+                    field.setMaxSize(80, 80);
+                    field.setBackground(null);
+                } else {
+                    field = null;
+                    tile.setFill(Color.BLACK);
+                }
+
+                tile.setStroke(Color.BLACK);
+                if (field != null) {
+                    this.tile_board.add(new StackPane(tile, field), j, i);
+                } else {
+                    this.tile_board.add(new StackPane(tile), j, i);
+                }
+            }
+        }
+        this.getChildren().add(this.tile_board);
+    }
+
+    public void resize_board(int[][] board) {
+
+        this.size = board.length;
+
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board[i].length; j++) {
+                if (i == size - 1 || j == size - 1) {
+                    Rectangle tile = new Rectangle(80, 80);
+                    TextField field = new OneCharField();
+
+                    if (Math.random() * 100 > 12) {
+                        tile.setFill(Color.WHITE);
+                        field.setAlignment(Pos.CENTER);
+                        field.setMaxSize(80, 80);
+                        field.setBackground(null);
+
+                        this.matrix[i][j] = (int) Math.floor(Math.random() * 9) + 1;
+                    } else {
+                        field = null;
+                        tile.setFill(Color.BLACK);
+                        this.matrix[i][j] = -1;
+                    }
+
+                    tile.setStroke(Color.BLACK);
+                    if (field != null) {
+                        this.tile_board.add(new StackPane(tile, field), j, i);
+                    } else {
+                        this.tile_board.add(new StackPane(tile), j, i);
+                    }
+                }
+            }
+        }
+    }
+
     public void create_tiles() {
-        for (int i = 0; i < x_size; i++) {
-            for (int j = 0; j < y_size; j++) {
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
 
                 Rectangle tile = new Rectangle(80, 80);
                 TextField field = new OneCharField();
@@ -93,6 +172,7 @@ public class GameBoard extends VBox implements Serializable {
                 }
             }
         }
+
         this.getChildren().add(this.tile_board);
     }
 
@@ -145,14 +225,29 @@ public class GameBoard extends VBox implements Serializable {
 
         // save button
 
+        VBox first = new VBox(10);
+        HBox layout = new HBox(10);
+        VBox last = new VBox(10);
+
+        Button save = new Button("Save");
+        save.setTranslateX(20);
+        save.setOnAction((event) -> {
+            try {
+                save_game();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+
+
         // check button
         Button check = new Button("Check");
         check.setTranslateX(20);
         check.setOnAction((event) -> {
-            if(check_elements() == 0){
-                MessageBox box = new MessageBox("Game Over", "You Win!");
+            if (check_elements() == 0) {
+                MessageBox box = new MessageBox("Game Over", "You Win!", "New Game");
                 primary_satge.setScene(Main.main_scene);
-            };
+            }
         });
 
 
@@ -171,8 +266,12 @@ public class GameBoard extends VBox implements Serializable {
             primary_satge.setScene(Main.main_scene);
         });
 
-        this.getChildren().addAll(exit, solution, check);
+        // TODO: endelss mode
 
+        first.getChildren().add(save);
+        layout.getChildren().addAll(check, solution);
+        last.getChildren().addAll(exit);
+        this.getChildren().addAll(first, layout, last);
     }
 
     public void show_solution() {
@@ -184,7 +283,7 @@ public class GameBoard extends VBox implements Serializable {
     }
 
     public int[] flatten_array() {
-        int[] out = new int[x_size * y_size];
+        int[] out = new int[size * size];
         int s = 0;
         for (int i = 0; i < matrix.length; i++) {
             for (int j = 0; j < matrix[i].length; j++) {
@@ -209,11 +308,11 @@ public class GameBoard extends VBox implements Serializable {
                 if (tf.getText().equals("") || Integer.parseInt(tf.getText()) != arr[i]) {
                     Rectangle rect = (Rectangle) pane.getChildren().get(0);
                     rect.setFill(Color.RED);
-                    o=-1;
-                }else {
+                    o = -1;
+                } else {
                     Rectangle rect = (Rectangle) pane.getChildren().get(0);
                     rect.setFill(Color.WHITE);
-                    o=0;
+                    o = 0;
                 }
             }
         }
@@ -221,22 +320,43 @@ public class GameBoard extends VBox implements Serializable {
         return o;
     }
 
-    public void setElement(int row, int col, int value) {
-        StackPane pane = (StackPane) this.tile_board.getChildren().get(x_size * row + col);
+
+    public void setElement(int i, int j, int value) {
+        StackPane pane = (StackPane) this.tile_board.getChildren().get(i*size+j);
         if (pane.getChildren().size() > 1) {
             TextField tf = (TextField) pane.getChildren().get(1);
             tf.setText(String.valueOf(value));
         }
     }
 
-    public String getElement(int row, int col) {
-        StackPane pane = (StackPane) this.tile_board.getChildren().get(x_size * row + col);
+    public String getElement(int i, int j) {
+        StackPane pane = (StackPane) this.tile_board.getChildren().get(i*size+j);
         if (pane.getChildren().size() > 1) {
             TextField tf = (TextField) pane.getChildren().get(1);
             return tf.getText();
         }
 
         return "err";
+    }
+
+    public TextField getFullElement(int row, int col) {
+        StackPane pane = (StackPane) this.tile_board.getChildren().get(size * row + col);
+        if (pane.getChildren().size() > 1) {
+            TextField tf = (TextField) pane.getChildren().get(1);
+            return tf;
+        }
+
+        return null;
+    }
+
+    public void set_state(int[][] state) {
+        for (int i = 0; i < state.length; i++) {
+            for (int j = 0; j < state[i].length; j++) {
+                if (state[i][j] != -1) {
+                    setElement(i, j, state[i][j]);
+                }
+            }
+        }
     }
 
     public void print() {
@@ -247,4 +367,55 @@ public class GameBoard extends VBox implements Serializable {
             System.out.println();
         }
     }
+
+
+    public void save_game() throws IOException {
+
+        PrintWriter pw = new PrintWriter(new FileWriter("saveFiles/" + this.game_name));
+
+        pw.println(this.size);
+
+        // save tile color
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[0].length; j++) {
+                if (matrix[i][j] == -1) {
+                    pw.print(1 + " ");
+                } else {
+                    pw.print(0 + " ");
+                }
+            }
+            pw.println();
+        }
+
+        pw.println("; ; ;");
+
+
+        //save game solution
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[0].length; j++) {
+                pw.print(matrix[i][j] + " ");
+            }
+            pw.println();
+        }
+
+        pw.println("; ; ;");
+
+        //save state
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[0].length; j++) {
+                if (getElement(i, j).equals("") || getElement(i, j).equals("err")) {
+                    pw.print(-1 + " ");
+                } else {
+                    pw.print(getElement(i, j) + " ");
+                }
+            }
+            pw.println();
+        }
+
+        pw.println("; ; ;");
+
+        pw.close();
+        MessageBox box = new MessageBox("Success", "Game Saved!", "Exit");
+    }
+
 }
