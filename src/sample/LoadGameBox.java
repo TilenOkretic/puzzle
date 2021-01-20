@@ -104,7 +104,6 @@ public class LoadGameBox {
                 String[] line = l.split(" ");
                 for (int j=0; j<line.length; j++) {
                     state[i][j] = Integer.parseInt(line[j]);
-                    //System.out.print(Integer.parseInt(line[j]) + " ");
                 }
                 l = sc.nextLine();
             }
@@ -113,7 +112,6 @@ public class LoadGameBox {
 
         GameBoard gameBoard = new GameBoard(primaryStage, Math.abs(size), solution, stile);
         gameBoard.set_state(state);
-        //gameBoard.print();
 
         ScrollPane pane = new ScrollPane();
         pane.setContent(gameBoard);

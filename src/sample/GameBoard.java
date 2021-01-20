@@ -151,7 +151,7 @@ public class GameBoard extends VBox implements Serializable {
                 Rectangle tile = new Rectangle(80, 80);
                 TextField field = new OneCharField();
 
-                if (Math.random() * 100 > 12) {
+                if (Math.random() * 100 > Main.CHANCE) {
                     tile.setFill(Color.WHITE);
                     field.setAlignment(Pos.CENTER);
                     field.setMaxSize(80, 80);
@@ -312,7 +312,6 @@ public class GameBoard extends VBox implements Serializable {
                 } else {
                     Rectangle rect = (Rectangle) pane.getChildren().get(0);
                     rect.setFill(Color.WHITE);
-                    o = 0;
                 }
             }
         }
@@ -371,7 +370,12 @@ public class GameBoard extends VBox implements Serializable {
 
     public void save_game() throws IOException {
 
-        PrintWriter pw = new PrintWriter(new FileWriter("saveFiles/" + this.game_name));
+        File f = new File("./saveFiles/");
+        if(!f.isDirectory()){
+            f.mkdir();
+        }
+
+        PrintWriter pw = new PrintWriter(new FileWriter("./saveFiles/" + this.game_name));
 
         pw.println(this.size);
 
